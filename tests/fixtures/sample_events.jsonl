@@ -1,0 +1,10 @@
+
+{"timestamp":"2026-10-16T08:38:40Z","eventid":"cowrie.session.connect","src_ip":"192.0.2.10","session":"sample-session-001","protocol":"ssh","username":null,"input":null,"message":"New SSH connection","extra":{"src_port":35504,"dst_port":2222}}
+{"timestamp":"2026-10-16T08:38:40Z","eventid":"cowrie.client.version","src_ip":"192.0.2.10","session":"sample-session-001","protocol":"ssh","username":null,"input":null,"message":"Remote SSH version received","extra":{"version":"SSH-2.0-example-client"}}
+{"timestamp":"2026-10-16T08:38:46Z","eventid":"cowrie.login.success","src_ip":"192.0.2.10","session":"sample-session-001","protocol":"ssh","username":"sample_user","input":null,"message":"Simulated honeypot login succeeded","extra":{}}
+{"timestamp":"2026-10-16T08:41:38Z","eventid":"cowrie.command.input","src_ip":"192.0.2.10","session":"sample-session-001","protocol":"ssh","username":"sample_user","input":"whoami","message":"CMD: whoami","extra":{}}
+{"timestamp":"2026-10-16T08:41:42Z","eventid":"cowrie.command.input","src_ip":"192.0.2.10","session":"sample-session-001","protocol":"ssh","username":"sample_user","input":"pwd","message":"CMD: pwd","extra":{}}
+{"timestamp":"2026-10-16T08:41:49Z","eventid":"cowrie.command.input","src_ip":"192.0.2.10","session":"sample-session-001","protocol":"ssh","username":"sample_user","input":"uname -a","message":"CMD: uname -a","extra":{}}
+{"timestamp":"2026-10-16T08:43:12Z","eventid":"cowrie.command.input","src_ip":"192.0.2.10","session":"sample-session-002","protocol":"ssh","username":"sample_user","input":"ls","message":"CMD: ls","extra":{}}
+{"timestamp":"2026-10-16T08:43:25Z","eventid":"cowrie.command.input","src_ip":"192.0.2.10","session":"sample-session-002","protocol":"ssh","username":"sample_user","input":"cat /etc/passwd","message":"CMD: cat /etc/passwd","extra":{}}
+{"timestamp":"2026-10-16T08:45:14Z","eventid":"cowrie.session.closed","src_ip":"192.0.2.10","session":"sample-session-002","protocol":"ssh","username":null,"input":null,"message":"SSH session closed","extra":{"duration_ms":131502}}

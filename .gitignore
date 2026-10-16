@@ -216,3 +216,17 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Honeypot project: local databases and secrets
+*.db
+*.sqlite
+*.sqlite3
+*.pem
+*.key
+
+# Cowrie logs and captured data
+cowrie.json
+cowrie.log
+raw-logs/
+var/log/cowrie/
+var/lib/cowrie/downloads/
