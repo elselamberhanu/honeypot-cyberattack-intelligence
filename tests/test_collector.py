@@ -1,4 +1,4 @@
-
+﻿
 import json
 
 from src.collector import (
@@ -51,7 +51,35 @@ def test_does_not_expose_password():
     assert "password" not in event
     assert "password" not in event["extra"]
     assert "FAKE_TEST_VALUE" not in json.dumps(event)
+def test_filters_sensitive_fields():
+    # Create an event containing several fields that may hold secrets.
+    raw = {
+        "timestamp": "2026-10-16T10:00:00Z",
+        "eventid": "cowrie.login.failed",
+        "api_key": "FAKE_API_KEY",
+        "access_token": "FAKE_ACCESS_TOKEN",
+        "credentials": "FAKE_CREDENTIALS",
+        "private-key": "FAKE_PRIVATE_KEY",
+    }
 
+    # Convert the raw event into our normalized event.
+    event = normalize_event(raw)
+
+    # The event should still be accepted.
+    assert event is not None
+
+    # None of these sensitive fields should appear in extra data.
+    assert "api_key" not in event["extra"]
+    assert "access_token" not in event["extra"]
+    assert "credentials" not in event["extra"]
+    assert "private-key" not in event["extra"]
+
+    # Check that the secret values are not present anywhere in the event.
+    event_text = json.dumps(event)
+    assert "FAKE_API_KEY" not in event_text
+    assert "FAKE_ACCESS_TOKEN" not in event_text
+    assert "FAKE_CREDENTIALS" not in event_text
+    assert "FAKE_PRIVATE_KEY" not in event_text
 
 def test_skips_malformed_json_line(tmp_path):
     log_path = tmp_path / "test_cowrie.jsonl"
