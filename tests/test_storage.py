@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from src.storage import EVENT_FIELDS, get_events, init_db, insert_events
+from src.storage import EVENT_FIELDS, StorageError, get_events, init_db, insert_events
 
 # Path to the shared normalized sample fixture, built relative to this file so
 # the tests work no matter which folder pytest is launched from.
@@ -192,6 +192,60 @@ def test_non_dict_extra_is_rejected_and_nothing_inserted(db):
     with pytest.raises(ValueError):
         insert_events([make_event(), make_event(session="x", extra="oops")], db)
     assert get_events(db_path=db) == []
+
+
+def test_missing_timestamp_is_rejected(db):
+    # Contract: records without a usable timestamp must not be stored.
+    event = make_event()
+    del event["timestamp"]
+    with pytest.raises(ValueError):
+        insert_events([event], db)
+    for bad in (None, "", "   ", 12345):
+        with pytest.raises(ValueError):
+            insert_events([make_event(timestamp=bad)], db)
+    assert get_events(db_path=db) == []
+
+
+def test_missing_eventid_is_rejected(db):
+    for bad in (None, "", "   ", 7):
+        with pytest.raises(ValueError):
+            insert_events([make_event(eventid=bad)], db)
+    assert get_events(db_path=db) == []
+
+
+def test_optional_fields_must_be_string_or_null(db):
+    # e.g. a number or list in src_ip violates the declared schema types.
+    for field in ("src_ip", "session", "protocol", "username", "input", "message"):
+        with pytest.raises(ValueError):
+            insert_events([make_event(**{field: 123})], db)
+
+
+def test_validation_error_does_not_leak_field_values(db):
+    # Security rule: error messages must never contain captured data.
+    secret = "SuperSecretValue"
+    try:
+        insert_events([make_event(username=["x", secret])], db)
+    except ValueError as exc:
+        assert secret not in str(exc)
+
+
+def test_invalid_limits_are_rejected(db):
+    # 0 and negatives are invalid (SQLite would treat -1 as "no limit"!),
+    # and so are non-integers and booleans.
+    for bad in (0, -1, -100, "5", 2.5, None, True):
+        with pytest.raises(ValueError):
+            get_events(limit=bad, db_path=db)
+
+
+def test_database_errors_raise_storage_error(tmp_path):
+    # A directory path is not a valid database file, so sqlite3 fails and
+    # we must surface a clear StorageError instead of a raw sqlite3 error.
+    with pytest.raises(StorageError):
+        init_db(str(tmp_path))
+    with pytest.raises(StorageError):
+        insert_events([make_event()], str(tmp_path))
+    with pytest.raises(StorageError):
+        get_events(db_path=str(tmp_path))
 
 
 def test_non_dict_event_is_rejected(db):

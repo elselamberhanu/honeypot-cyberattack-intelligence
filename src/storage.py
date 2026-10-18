@@ -32,6 +32,17 @@ EVENT_FIELDS = (
     "extra",
 )
 
+# Per the technical contract: timestamp and eventid must be non-empty strings
+# (records without them are unusable); the other six scalar fields may be a
+# string or null.
+_REQUIRED_TEXT_FIELDS = ("timestamp", "eventid")
+_OPTIONAL_TEXT_FIELDS = ("src_ip", "session", "protocol", "username", "input", "message")
+
+
+class StorageError(Exception):
+    """Raised when a database operation fails (wraps sqlite3.Error)."""
+
+
 # "IF NOT EXISTS" makes this safe to run every time (init_db is idempotent).
 # `event_hash` is UNIQUE: this is what stops the same event being stored twice.
 # `extra` is TEXT because SQLite has no dict type; we keep JSON in it.
@@ -39,8 +50,8 @@ _CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS events (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     event_hash  TEXT NOT NULL UNIQUE,
-    timestamp   TEXT,
-    eventid     TEXT,
+    timestamp   TEXT NOT NULL,
+    eventid     TEXT NOT NULL,
     src_ip      TEXT,
     session     TEXT,
     protocol    TEXT,
@@ -94,6 +105,16 @@ def _canonical(event):
     """Return the nine normalized fields as a plain dict (missing -> None/{})."""
     if not isinstance(event, dict):
         raise ValueError("each event must be a dictionary")
+    # Schema validation. Error messages name the FIELD only, never its value,
+    # so a captured credential can never leak into an error message.
+    for name in _REQUIRED_TEXT_FIELDS:
+        value = event.get(name)
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"event '{name}' is required and must be a non-empty string")
+    for name in _OPTIONAL_TEXT_FIELDS:
+        value = event.get(name)
+        if value is not None and not isinstance(value, str):
+            raise ValueError(f"event '{name}' must be a string or null")
     # Build a fresh dict containing only the eight scalar fields. Anything
     # else in the incoming event (unknown keys) is dropped, and missing keys
     # become None so every stored row has the same shape.
@@ -126,9 +147,12 @@ def init_db(db_path=DEFAULT_DB_PATH):
     # NOTE: sqlite3's own `with conn:` does NOT close the connection; it only
     # commits (or rolls back on error). That is why we need both `with`s:
     # the outer one closes, the inner one handles the transaction.
-    with closing(_connect(db_path)) as conn:
-        with conn:
-            _ensure_schema(conn)
+    try:
+        with closing(_connect(db_path)) as conn:
+            with conn:
+                _ensure_schema(conn)
+    except sqlite3.Error as exc:
+        raise StorageError(f"could not initialize database: {exc}") from exc
 
 
 def insert_events(events, db_path=DEFAULT_DB_PATH):
@@ -160,36 +184,47 @@ def insert_events(events, db_path=DEFAULT_DB_PATH):
             )
         )
 
-    with closing(_connect(db_path)) as conn:
-        with conn:  # one transaction: commit on success, rollback on error
-            _ensure_schema(conn)
-            # How we count only NEW rows: conn.total_changes is the running
-            # number of rows this connection has changed. INSERT OR IGNORE
-            # adds 0 for a skipped duplicate and 1 for a real insert, so the
-            # difference before/after is exactly the number newly inserted.
-            # (cursor.rowcount is less reliable with INSERT OR IGNORE.)
-            before = conn.total_changes
-            for row in rows:
-                conn.execute(_INSERT_SQL, row)
-            return conn.total_changes - before
+    try:
+        with closing(_connect(db_path)) as conn:
+            with conn:  # one transaction: commit on success, rollback on error
+                _ensure_schema(conn)
+                # How we count only NEW rows: conn.total_changes is the running
+                # number of rows this connection has changed. INSERT OR IGNORE
+                # adds 0 for a skipped duplicate and 1 for a real insert, so the
+                # difference before/after is exactly the number newly inserted.
+                # (cursor.rowcount is less reliable with INSERT OR IGNORE.)
+                before = conn.total_changes
+                for row in rows:
+                    conn.execute(_INSERT_SQL, row)
+                return conn.total_changes - before
+    except sqlite3.Error as exc:
+        raise StorageError(f"could not insert events: {exc}") from exc
 
 
 def get_events(limit=1000, db_path=DEFAULT_DB_PATH):
     """Return up to `limit` events, oldest first, as nine-field dictionaries."""
-    with closing(_connect(db_path)) as conn:
-        # Make sure the table exists so asking a brand-new/missing database
-        # returns an empty list instead of an "no such table" error.
-        with conn:
-            _ensure_schema(conn)
-        # int(limit) guards against a string like "5" being passed in.
-        cursor = conn.execute(_SELECT_SQL, (int(limit),))
-        results = []
-        for row in cursor.fetchall():
-            # zip pairs each column value with its field name, turning the
-            # row tuple into a dict like {"timestamp": ..., "eventid": ...}.
-            event = dict(zip(EVENT_FIELDS, row))
-            # Reverse of what insert_events did: JSON text -> real dict.
-            # An empty/NULL value falls back to {} so `extra` is always a dict.
-            event["extra"] = json.loads(event["extra"]) if event["extra"] else {}
-            results.append(event)
-        return results
+    # Reject invalid limits instead of guessing. bool is checked separately
+    # because True/False are technically ints in Python. This also matters for
+    # safety: SQLite treats a negative LIMIT as "no limit at all".
+    if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:
+        raise ValueError("limit must be a positive integer")
+
+    try:
+        with closing(_connect(db_path)) as conn:
+            # Make sure the table exists so asking a brand-new/missing database
+            # returns an empty list instead of a "no such table" error.
+            with conn:
+                _ensure_schema(conn)
+            cursor = conn.execute(_SELECT_SQL, (limit,))
+            results = []
+            for row in cursor.fetchall():
+                # zip pairs each column value with its field name, turning the
+                # row tuple into a dict like {"timestamp": ..., "eventid": ...}.
+                event = dict(zip(EVENT_FIELDS, row))
+                # Reverse of what insert_events did: JSON text -> real dict.
+                # An empty/NULL value falls back to {} so `extra` is always a dict.
+                event["extra"] = json.loads(event["extra"]) if event["extra"] else {}
+                results.append(event)
+            return results
+    except sqlite3.Error as exc:
+        raise StorageError(f"could not read events: {exc}") from exc
