@@ -10,9 +10,34 @@ NORMALIZED_FIELDS = {
     "protocol", "username", "input", "message", "extra",
 }
 
-SENSITIVE_FIELDS = {
-    "password", "passwd", "secret", "token", "private_key",
-}
+# Words commonly found in field names that may contain sensitive information.
+SENSITIVE_WORDS = (
+    "password",
+    "passwd",
+    "secret",
+    "token",
+    "credential",
+    "authorization",
+    "api_key",
+    "private_key",
+)
+
+
+def is_sensitive_field(key):
+    """Check whether a field name might contain a secret."""
+
+    # Convert the field name to lowercase so matching is case-insensitive.
+    # Replace hyphens with underscores to handle names like "private-key".
+    normalized_key = key.lower().replace("-", "_")
+
+    # Return True if the field name contains a sensitive word,
+    # ends with "_key", or is exactly "auth".
+    return (
+        any(word in normalized_key for word in SENSITIVE_WORDS)
+        or normalized_key.endswith("_key")
+        or normalized_key == "auth"
+    )
+
 
 
 def normalize_timestamp(value):
@@ -66,7 +91,7 @@ def normalize_event(raw_event):
         if key in NORMALIZED_FIELDS:
             continue
 
-        if key.lower() in SENSITIVE_FIELDS:
+        if is_sensitive_field(key):
             continue
 
         if isinstance(value, (str, int, float, bool)) or value is None:
