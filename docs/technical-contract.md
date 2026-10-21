@@ -17,7 +17,7 @@ The system follows this flow:
 2. The collector reads the raw log and normalizes events.
 3. The storage module inserts normalized events into SQLite.
 4. The analysis module evaluates stored events and produces summary statistics and alerts.
-5. The existing dashboard displays event data, statistics, and alerts.
+5. The new Streamlit dashboard (dashboard_streamlit.py) displays event data, statistics, and alerts. The previously existing dashboard will not be integrated into this project MVP.
 
 The system must support testing with fixtures before connecting to live Cowrie.
 
@@ -28,7 +28,8 @@ The system must support testing with fixtures before connecting to live Cowrie.
 - SQLite for local event storage.
 - Python's built-in `sqlite3` and `json` modules where suitable.
 - `pytest` for automated tests.
-- The existing dashboard framework must be preserved. Do not rebuild the dashboard.
+- Streamlit is the agreed framework for the new project dashboard. The team is forgoing integration of the previously existing dashboard and will build a new dashboard in dashboard_streamlit.py.
+- pandas is used by the dashboard to prepare tables and chart data.
 
 ---
 
@@ -58,11 +59,11 @@ honeypot-cyberattack-intelligence/
 │   ├── test_storage.py
 │   ├── test_analysis.py
 │   └── test_pipeline.py
-├── app.py                 # Only if this matches the existing dashboard
+├── dashboard_streamlit.py
 └── requirements.txt
 ```
 
-Do not move or overwrite the existing dashboard files just to match this example. Adapt the structure around the dashboard that already exists.
+The new project dashboard entry point is dashboard_streamlit.py at the repository root. The old dashboard may remain in the repository for reference, but it is not the dashboard used by this project MVP. Do not delete old files unless the team separately agrees to that cleanup.
 
 ---
 
@@ -443,15 +444,14 @@ Do not claim a test passed unless it was actually run.
 
 ---
 
-## 9. Dashboard integration contract
+## 9. Streamlit dashboard contract
+File: dashboard_streamlit.py at the repository root.
 
-The existing dashboard must not be rebuilt as part of this task.
-
-The dashboard owner and integration coordinator should inspect the current dashboard before changing its data source.
+The team has decided to forgo integrating the previously existing dashboard and build a new dashboard using Streamlit. This is an explicit change from the initial dashboard plan.
 
 ### Required dashboard data
 
-The dashboard should be able to display, where supported by its current design:
+Where data is available, the dashboard should display:
 
 - Total events.
 - Successful and failed login counts.
@@ -463,13 +463,13 @@ The dashboard should be able to display, where supported by its current design:
 
 ### Data source
 
-Use the existing framework and preserve the dashboard's current layout where practical.
-
-The preferred data source is the shared SQLite database and the analysis output. Avoid creating a second unrelated database or a different set of event field names.
-
-If the dashboard runs in the same Python project, it may import `storage.py` and `analysis.py` directly. If the current dashboard is a separate application or uses a remote connection, the integration coordinator must adapt the connection safely after inspecting its implementation.
-
-Do not hard-code obsolete VM addresses or embed SSH passwords in source code. Never expose the management SSH service to the public internet for this project.
+- Read normalized events through the shared functions in src/storage.py, using the default database data/honeypot.db.
+- Use src/analysis.py and its analyze_events(events) interface for summary statistics and alerts.
+- Do not create a second database, a new event schema, or a second collector.
+- Do not insert events from the dashboard. Collection and storage remain responsibilities of the pipeline and storage modules.
+- If the database is missing or empty, show a clear, beginner-friendly message instead of crashing.
+- Display commands, messages, usernames, and other event fields as untrusted data. Never execute collected commands.
+- Do not hard-code obsolete VM addresses or embed SSH passwords in source code. Never expose the management SSH service to the public internet for this project.
 
 ---
 
