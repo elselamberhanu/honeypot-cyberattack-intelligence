@@ -2,24 +2,20 @@
 
 ## Project overview
 
-This project uses Cowrie, a deliberately deployed SSH/Telnet honeypot, to collect and analyze activity directed at a controlled environment. The platform organizes observed events and presents useful security insights in a Python dashboard.
+This project uses Cowrie, a deliberately deployed SSH honeypot, to collect and analyze activity directed at a controlled environment. The platform organizes observed events and presents useful security insights in a Python dashboard.
 
-## Planned architecture
+## How it works
 
-1. **Cowrie:** captures activity in the isolated honeypot lab.
-2. **Collector:** reads Cowrie JSON events and converts them into a common event format.
-3. **SQLite storage:** saves normalized events for querying and reporting.
-4. **Rule-based analysis:** calculates event counts and identifies activity using transparent rules.
-5. **Pipeline (src/pipeline.py)**: coordinates collection, storage, retrieval, and analysis.
-6. **Streamlit Dashboard(dashboard_streamlit.py):** displays summary metrics, event activity, recent events, and analysis alerts.
+Cowrie JSONL log → collector and normalization → SQLite storage → analysis and alerts → Streamlit dashboard
 
-//The already built dashboard will be integrated with the collection and analysis components; it is not being rebuilt from scratch.//
+## Main components
 
-**Dashboard decision: The team is forgoing integration of the previously existing dashboard and building a new dashboard using Streamlit. The old dashboard files, if present, are not used by this MVP.**
-
-## Development status
-
-The Cowrie honeypot has been tested in a controlled virtual-machine lab. The shared event schema and anonymized sample data are the starting point for software integration. The Streamlit dashboard is the new planned dashboard; verify it with the current repository and sanitized data before describing the full platform as integrated or complete.
+- `src/collector.py` — reads Cowrie JSON Lines and normalizes usable events.
+- `src/storage.py` — validates and stores events in `data/honeypot.db`, preventing duplicate inserts.
+- `src/analysis.py` — calculates event summaries and flags selected patterns for investigation.
+- `src/pipeline.py` — coordinates collection, storage, and analysis.
+- `dashboard\` — displays stored events, summary metrics, and alerts.
+- `tests/` — automated tests and sanitized fixtures.
 
 ## Repository layout
 
@@ -28,6 +24,7 @@ The Cowrie honeypot has been tested in a controlled virtual-machine lab. The sha
 - `src/` — planned collector, storage, analysis, and pipeline modules.
 - `tests/` — test_collector.py, test_storage.py, test_analysis.py, test_pipeline.py
 - dashboard_streamlit.py
+
 ## Development principles
 
 - Use the isolated lab and dummy credentials for testing.
@@ -37,14 +34,10 @@ The Cowrie honeypot has been tested in a controlled virtual-machine lab. The sha
 - Treat all honeypot input as untrusted text. Never execute commands collected by Cowrie.
 - Coordinate shared interfaces before integrating independently developed modules.
 
-## Team workflow
+## Documentation
 
-1. Each contributor works on a separate Git branch.
-2. Commit and push work to that branch.
-3. Open a pull request for review.
-4. Merge into `main` after the changes have been reviewed and tested.
+- [Technical contract](docs/technical-contract.md) — shared interfaces, database rules, detection behavior, and security requirements.
+- [Event schema](docs/event-schema.md) — the nine normalized event fields.
+- [Testing and results](docs/testing-and-results.md) — test commands, recorded results, and validation limits.
 
-## Current limitation
-
-The collector, database, analysis, pipeline, and Streamlit dashboard must be tested together before the platform can be considered complete. Dashboard data depends on events being stored in the shared SQLite database. The first dashboard version is an MVP and may be expanded after integration testing.
 
