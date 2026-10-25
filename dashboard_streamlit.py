@@ -1,31 +1,47 @@
-"""A small Streamlit dashboard for the honeypot project.
+"""Streamlit SOC dashboard for the Honeypot Cyberattack Intelligence platform.
 
-Run from the repository root with: streamlit run dashboard_streamlit.py
-This file reads events from src.storage; it does not collect or save events.
+Run from the repository root with:
+    streamlit run dashboard_streamlit.py
+
+This file is the main entry point that coordinates data retrieval, analysis,
+and section rendering across dedicated dashboard modules.
 """
 
-from collections import Counter
-from pathlib import Path
 import os
+from pathlib import Path
 import sys
 
 import pandas as pd
 import streamlit as st
 
-# Add the project folder to Python's import path so src.storage can be found.
+# Add the project root to sys.path so src and dashboard packages resolve reliably.
 PROJECT_FOLDER = Path(__file__).resolve().parent
 if str(PROJECT_FOLDER) not in sys.path:
     sys.path.insert(0, str(PROJECT_FOLDER))
 
 from src.storage import DEFAULT_DB_PATH, get_events, init_db  # noqa: E402
 
-# The dashboard can show basic metrics even if the analysis module is not ready.
 try:
-    from src.analysis import analyze_events
+    from src.analysis import analyze_events, parse_timestamp
 except ImportError:
     analyze_events = None
+    parse_timestamp = None
 
-# Use HONEYPOT_DB_PATH if provided; otherwise use the normal project database.
+from dashboard.styles import get_theme_css
+from dashboard.components import (
+    render_sidebar,
+    render_header,
+    render_kpi_cards,
+    render_posture_banner,
+)
+from dashboard.charts import render_attack_activity_section
+from dashboard.alerts import render_alerts_section
+from dashboard.event_explorer import render_event_explorer
+
+
+# ---------------------------------------------------------------------------
+# Database Configuration
+# ---------------------------------------------------------------------------
 configured_db = os.environ.get("HONEYPOT_DB_PATH")
 
 if configured_db:
@@ -33,41 +49,63 @@ if configured_db:
 else:
     DATABASE_FILE = PROJECT_FOLDER / DEFAULT_DB_PATH
 
+
+# ---------------------------------------------------------------------------
+# Page Configuration & Styling
+# ---------------------------------------------------------------------------
 st.set_page_config(
     page_title="Honeypot Cyberattack Intelligence",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
-st.title("Honeypot Cyberattack Intelligence")
-st.write("A simple view of events recorded by the Cowrie honeypot.")
+event_limit = render_sidebar(DATABASE_FILE, default_limit=1000)
+st.markdown(get_theme_css(), unsafe_allow_html=True)
 
-# Sidebar controls stay simple: show the database location and refresh the page.
-with st.sidebar:
-    st.header("Controls")
-    st.caption(f"Database: {DATABASE_FILE}")
-    if st.button("Refresh data"):
-        st.rerun()
 
-# Stop early with a clear message if the pipeline has not created the database.
+# ---------------------------------------------------------------------------
+# Database Ingestion & Validation
+# ---------------------------------------------------------------------------
 if not DATABASE_FILE.exists():
+    st.markdown(
+        """
+        <div class="soc-header" style="border-left-color: var(--soc-alert-high-accent);">
+            <h1 class="soc-title">Honeypot Cyberattack Intelligence</h1>
+            <div class="soc-subtitle">SSH Threat Monitoring & Attack Behavior Analysis</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     st.warning(
-        "The database has not been created yet. Run the project pipeline first."
+        f"Database not found at `{DATABASE_FILE}`. "
+        "Please run the project ingestion pipeline (src.pipeline) first to populate events."
     )
     st.stop()
 
-# Use the project's storage functions instead of writing separate SQL here.
 try:
     init_db(db_path=DATABASE_FILE)
-    events = get_events(limit=1000, db_path=DATABASE_FILE)
+    events = get_events(limit=event_limit, db_path=DATABASE_FILE)
 except Exception as error:
     st.error(f"Could not read the project database: {error}")
     st.stop()
 
 if not events:
-    st.info("The database is empty. Ingest some sanitized sample events first.")
+    st.markdown(
+        """
+        <div class="soc-header" style="border-left-color: var(--soc-alert-med-accent);">
+            <h1 class="soc-title">Honeypot Cyberattack Intelligence</h1>
+            <div class="soc-subtitle">SSH Threat Monitoring & Attack Behavior Analysis</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.info("The database is currently empty. Ingest normalized Cowrie sample events first.")
     st.stop()
 
-# Calculate simple metrics from the normalized events.
+
+# ---------------------------------------------------------------------------
+# Metrics Calculation & Heuristic Analysis
+# ---------------------------------------------------------------------------
 event_types = [event.get("eventid") for event in events]
 source_ips = {event.get("src_ip") for event in events if event.get("src_ip")}
 sessions = {event.get("session") for event in events if event.get("session")}
@@ -75,8 +113,9 @@ failed_logins = event_types.count("cowrie.login.failed")
 successful_logins = event_types.count("cowrie.login.success")
 command_events = event_types.count("cowrie.command.input")
 total_events = len(events)
+source_count = len(source_ips)
+session_count = len(sessions)
 
-# If analysis.py is ready, use its shared summary and alerts.
 alerts = []
 if callable(analyze_events):
     try:
@@ -84,97 +123,70 @@ if callable(analyze_events):
         summary = analysis_result["summary"]
         alerts = analysis_result["alerts"]
 
-        # Prefer the official counts from the analysis module.
-        total_events = summary["total_events"]
-        source_count = summary["unique_source_ips"]
-        session_count = summary["unique_sessions"]
-        failed_logins = summary["failed_logins"]
-        successful_logins = summary["successful_logins"]
-        command_events = summary["command_events"]
+        total_events = summary.get("total_events", total_events)
+        source_count = summary.get("unique_source_ips", source_count)
+        session_count = summary.get("unique_sessions", session_count)
+        failed_logins = summary.get("failed_logins", failed_logins)
+        successful_logins = summary.get("successful_logins", successful_logins)
+        command_events = summary.get("command_events", command_events)
     except (KeyError, TypeError, ValueError) as error:
-        source_count = len(source_ips)
-        session_count = len(sessions)
         st.warning(f"Analysis results were not in the expected format: {error}")
 else:
-    source_count = len(source_ips)
-    session_count = len(sessions)
     st.info("Analysis alerts will appear when src.analysis.analyze_events is available.")
 
-st.header("Overview")
-first_row = st.columns(3)
-first_row[0].metric("Total events", total_events)
-first_row[1].metric("Unique source IPs", source_count)
-first_row[2].metric("Unique sessions", session_count)
+valid_timestamps = []
+for ev in events:
+    t_val = ev.get("timestamp")
+    if isinstance(t_val, str) and t_val.strip():
+        parsed_dt = parse_timestamp(t_val) if callable(parse_timestamp) else None
+        if parsed_dt:
+            valid_timestamps.append(parsed_dt)
+        else:
+            try:
+                pdt = pd.to_datetime(t_val)
+                if pd.notna(pdt):
+                    valid_timestamps.append(pdt)
+            except Exception:
+                pass
 
-second_row = st.columns(3)
-second_row[0].metric("Failed logins", failed_logins)
-second_row[1].metric("Successful logins", successful_logins)
-second_row[2].metric("Command events", command_events)
-
-st.divider()
-
-# Count each event type so the team can quickly see what the honeypot recorded.
-st.header("Events by type")
-counts = Counter(str(event.get("eventid") or "unknown") for event in events)
-event_table = pd.DataFrame([
-    {"Event type": event_type, "Count": count}
-    for event_type, count in counts.most_common()
-])
-st.dataframe(event_table, width="stretch", hide_index=True)
-
-# Group events by the date portion of their normalized UTC timestamp.
-st.header("Daily activity")
-daily_counts = Counter()
-for event in events:
-    timestamp = event.get("timestamp")
-    if isinstance(timestamp, str) and len(timestamp) >= 10:
-        daily_counts[timestamp[:10]] += 1
-
-if daily_counts:
-    chart_data = pd.DataFrame([
-        {"Date (UTC)": day, "Events": count}
-        for day, count in sorted(daily_counts.items())
-    ]).set_index("Date (UTC)")
-    st.line_chart(chart_data)
+if valid_timestamps:
+    latest_ts_obj = max(valid_timestamps)
+    latest_ts_str = latest_ts_obj.strftime("%Y-%m-%d %H:%M:%S UTC")
 else:
-    st.caption("No usable timestamps were found for the chart.")
+    latest_ts_str = "No timestamp recorded"
 
-st.divider()
 
-# Display the alerts created by src.analysis; do not create detection rules here.
-st.header("Analysis alerts")
-if alerts:
-    alert_table = pd.DataFrame([
-        {
-            "Severity": alert.get("severity"),
-            "Rule": alert.get("rule"),
-            "Source IP": alert.get("src_ip"),
-            "Session": alert.get("session"),
-            "Timestamp": alert.get("timestamp"),
-            "Description": alert.get("description"),
-        }
-        for alert in alerts
-    ])
-    st.dataframe(alert_table, width="stretch", hide_index=True)
-else:
-    st.caption("No alerts are available for the events currently loaded.")
+# ---------------------------------------------------------------------------
+# Section Rendering
+# ---------------------------------------------------------------------------
+render_header(
+    database_name=DATABASE_FILE.name,
+    total_events=total_events,
+    latest_timestamp=latest_ts_str,
+)
 
-st.divider()
+summary_metrics = {
+    "total_events": total_events,
+    "source_count": source_count,
+    "session_count": session_count,
+    "successful_logins": successful_logins,
+    "failed_logins": failed_logins,
+    "command_events": command_events,
+}
+render_kpi_cards(summary_metrics)
 
-# Storage returns oldest-first, so reverse the list to show the newest events first.
-st.header("Recent events")
-recent_events = list(reversed(events))[:100]
-recent_table = pd.DataFrame([
-    {
-        "Timestamp": event.get("timestamp"),
-        "Event type": event.get("eventid"),
-        "Source IP": event.get("src_ip"),
-        "Username": event.get("username"),
-        "Command/input": event.get("input"),
-        "Session": event.get("session"),
-        "Message": event.get("message"),
-    }
-    for event in recent_events
-])
-st.dataframe(recent_table, width="stretch", hide_index=True)
+high_alerts = sum(1 for a in alerts if a.get("severity") == "high")
+med_alerts = sum(1 for a in alerts if a.get("severity") == "medium")
+low_alerts = sum(1 for a in alerts if a.get("severity") == "low")
+render_posture_banner(total_events, high_alerts, med_alerts, low_alerts)
 
+render_attack_activity_section(
+    events=events,
+    valid_timestamps=valid_timestamps,
+    successful_logins=successful_logins,
+    failed_logins=failed_logins,
+)
+
+render_alerts_section(alerts)
+
+render_event_explorer(events)
