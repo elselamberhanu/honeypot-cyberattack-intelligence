@@ -116,7 +116,7 @@ def render_attack_activity_section(
                 ).encode(
                     x=alt.X("Interval:N", title="Timestamp (UTC)", axis=alt.Axis(labelAngle=-35)),
                     y=alt.Y("Event Count:Q", title="Events Recorded"),
-                    tooltip=["Interval", "Event Count"],
+                    tooltip=["Interval:N", "Event Count:Q"],
                 ).properties(height=260)
 
                 st.altair_chart(apply_chart_theme(area_chart, theme_mode), width="stretch")
@@ -160,7 +160,7 @@ def render_attack_activity_section(
             ).encode(
                 y=alt.Y("Event Type:N", sort="-x", title=None),
                 x=alt.X("Count:Q", title="Total Occurrences"),
-                tooltip=["Event Type", "Count"],
+                tooltip=["Event Type:N", "Count:Q"],
             ).properties(height=290)
 
             st.altair_chart(apply_chart_theme(types_chart, theme_mode), width="stretch")
@@ -214,7 +214,7 @@ def render_attack_activity_section(
                         ),
                         legend=None,
                     ),
-                    tooltip=["Outcome", "Attempts"],
+                    tooltip=["Outcome:N", "Attempts:Q"],
                 ).properties(height=230)
 
                 st.altair_chart(apply_chart_theme(logins_chart, theme_mode), width="stretch")
@@ -258,7 +258,7 @@ def render_attack_activity_section(
                 ).encode(
                     y=alt.Y("Source IP:N", sort="-x", title=None),
                     x=alt.X("Events:Q", title="Events Recorded"),
-                    tooltip=["Source IP", "Events"],
+                    tooltip=["Source IP:N", "Events:Q"],
                 ).properties(height=230)
 
                 st.altair_chart(apply_chart_theme(ips_chart, theme_mode), width="stretch")
@@ -308,7 +308,7 @@ def render_attack_activity_section(
                 ).encode(
                     y=alt.Y("Command:N", sort="-x", title=None),
                     x=alt.X("Executions:Q", title="Execution Count"),
-                    tooltip=["Command", "Executions"],
+                    tooltip=["Command:N", "Executions:Q"],
                 ).properties(height=230)
 
                 st.altair_chart(apply_chart_theme(cmds_chart, theme_mode), width="stretch")
