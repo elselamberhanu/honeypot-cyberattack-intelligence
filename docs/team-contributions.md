@@ -59,7 +59,9 @@ The Honeypot-Based Cyberattack Intelligence Platform was developed collaborative
 * Worked on database initialization, event insertion, and retrieval workflows.
 * Tested database behavior and helped validate that stored events could be retrieved for analysis and dashboard display.
 * Contributed to checking data consistency and the interaction between storage and other system components.
-Here is a video of me explaining what i contributed : https://drive.google.com/file/d/17myib8x-vocZp4NRRZ7in2ykkjFN5ppC/view?usp=sharing 
+Here is a video of me explaining what i contributed : https://drive.google.com/file/d/17myib8x-vocZp4NRRZ7in2ykkjFN5ppC/view?usp=sharing
+https://www.loom.com/share/8323557db2a84b82b12590f366bcf9be
+
 
 
 
