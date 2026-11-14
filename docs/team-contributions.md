@@ -50,6 +50,7 @@ The Honeypot-Based Cyberattack Intelligence Platform was developed collaborative
 * Contributed to the Streamlit dashboard.
 * Prepared and updated documentation covering project setup, execution instructions, and testing results so users and evaluators can understand how to run and validate the platform.
 * Collaborated on dashboard testing and validation before the updated dashboard was pushed to the repository.
+* https://www.loom.com/share/8323557db2a84b82b12590f366bcf9be
 
 ## 6\. Yohannes Belay — CTC-1445-26
 
@@ -60,7 +61,7 @@ The Honeypot-Based Cyberattack Intelligence Platform was developed collaborative
 * Tested database behavior and helped validate that stored events could be retrieved for analysis and dashboard display.
 * Contributed to checking data consistency and the interaction between storage and other system components.
 Here is a video of me explaining what i contributed : https://drive.google.com/file/d/17myib8x-vocZp4NRRZ7in2ykkjFN5ppC/view?usp=sharing
-https://www.loom.com/share/8323557db2a84b82b12590f366bcf9be
+
 
 
 
