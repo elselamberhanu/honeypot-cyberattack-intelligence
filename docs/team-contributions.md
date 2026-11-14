@@ -11,6 +11,8 @@ The Honeypot-Based Cyberattack Intelligence Platform was developed collaborative
 * Configured a shared-folder connection between the Cowrie honeypot environment and the project system to transfer Cowrie logs for processing and analysis.
 * Conducted end-to-end pipeline testing using Cowrie log data.
 
+* Watch the video of my project contribution explanation: https://screenrec.com/share/UnuXtz7hib
+
 ## 2\. Hawinet Teshome — CTC-977-26
 
 **Primary areas: Event Collection, Normalization, and Cowrie Testing**
@@ -19,11 +21,8 @@ The Honeypot-Based Cyberattack Intelligence Platform was developed collaborative
 * Prepared and examined sample events to help validate the processing of incoming honeypot data.
 * Contributed to Cowrie setup and testing, including verifying that generated log events could be collected and processed by the platform.
 * Helped validate the consistency and usability of collected event data.
-* \### Work Demonstration Video
 
-
-
-* \[Watch my project contribution explanation](https://screenrec.com/share/GdPUtniezK)
+* Watch the video of my project contribution explanation: https://screenrec.com/share/GdPUtniezK
 
 ## 3\. Firaol Tadesse — CTC-1192-26
 
@@ -50,7 +49,8 @@ The Honeypot-Based Cyberattack Intelligence Platform was developed collaborative
 * Contributed to the Streamlit dashboard.
 * Prepared and updated documentation covering project setup, execution instructions, and testing results so users and evaluators can understand how to run and validate the platform.
 * Collaborated on dashboard testing and validation before the updated dashboard was pushed to the repository.
-* https://www.loom.com/share/8323557db2a84b82b12590f366bcf9be
+
+* Watch the video of my project contribution explanation: https://www.loom.com/share/8323557db2a84b82b12590f366bcf9be
 
 ## 6\. Yohannes Belay — CTC-1445-26
 
@@ -60,7 +60,7 @@ The Honeypot-Based Cyberattack Intelligence Platform was developed collaborative
 * Worked on database initialization, event insertion, and retrieval workflows.
 * Tested database behavior and helped validate that stored events could be retrieved for analysis and dashboard display.
 * Contributed to checking data consistency and the interaction between storage and other system components.
-Here is a video of me explaining what i contributed : https://drive.google.com/file/d/17myib8x-vocZp4NRRZ7in2ykkjFN5ppC/view?usp=sharing
+* Watch the video of my project contribution explanation : https://drive.google.com/file/d/17myib8x-vocZp4NRRZ7in2ykkjFN5ppC/view?usp=sharing
 
 
 
