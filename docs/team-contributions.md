@@ -24,14 +24,17 @@ The Honeypot-Based Cyberattack Intelligence Platform was developed collaborative
 
 * Watch the video of my project contribution explanation: https://screenrec.com/share/GdPUtniezK
 
-## 3\. Firaol Tadesse — CTC-1192-26
+
+## 3. Firaol Tadesse — CTC-1192-26
 
 **Primary areas: Updated Dashboard, Frontend Design, and Dashboard Testing**
 
-* Developed an updated version of the Streamlit dashboard, improving the presentation of collected events, summary metrics, and security alerts.
-* Contributed to the dashboard's frontend design and visual layout to improve usability and the presentation of security information.
-* Tested the updated dashboard locally before pushing it to the repository, collaborating with Yadeno Demissie on testing and integration.
-* Helped validate the dashboard's functionality and presentation for the final system demonstration.
+- Developed an updated version of the Streamlit dashboard, improving the presentation of collected events, summary metrics, and security alerts.
+- Contributed to the dashboard's frontend design and visual layout to improve usability and the presentation of security information.
+- Tested the updated dashboard locally before pushing it to the repository, collaborating with Yadeno Demissie on testing and integration.
+- Helped validate the dashboard's functionality and presentation for the final system demonstration.
+- **Individual Contribution Video:** https://youtu.be/I0JrLgjLbeA
+
 
 ## 4\. Kidus Elias — CTC-709-26
 
