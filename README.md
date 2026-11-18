@@ -128,4 +128,3 @@ See [Team Members and Contributions](docs/team-contributions.md) for the full li
 
 ## Project demo
 - https://screenrec.com/share/9NQ5v8mcrS
-- Security event analysis demo (Kidus Elias — CTC-709-26): https://youtu.be/u0-G2c--2sw
