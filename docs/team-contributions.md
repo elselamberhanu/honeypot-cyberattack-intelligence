@@ -44,6 +44,7 @@ The Honeypot-Based Cyberattack Intelligence Platform was developed collaborative
 * Worked on identifying suspicious activity patterns and generating useful event summaries and alerts.
 * Tested analysis behavior using representative events and different test scenarios.
 * Helped validate the consistency of analysis results and the handling of different event types.
+* Watch the video of my project contribution explanation: https://youtu.be/u0-G2c--2sw
 
 ## 5\. Yadeno Demissie — CTC-5884-26
 
